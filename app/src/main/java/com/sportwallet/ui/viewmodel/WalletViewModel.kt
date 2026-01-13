@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.sportwallet.data.entities.DailyStatsEntity
 import com.sportwallet.data.repository.WalletRepository
 import com.sportwallet.domain.model.ActivityType
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -36,7 +37,7 @@ class WalletViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun resetDb() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repo.adminResetDatabase()
             repo.ensureTodayInitialized()
         }
@@ -49,7 +50,7 @@ class WalletViewModel(app: Application) : AndroidViewModel(app) {
         bonusPercent: Int,
         bonusGranted: Int
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repo.adminUpsertDay(
                 dayKey = dayKey,
                 flatEarnedCents = flat,
@@ -65,7 +66,7 @@ class WalletViewModel(app: Application) : AndroidViewModel(app) {
         amountCents: Int, // peut être négatif => retrait
         label: String
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repo.adminInsertTransaction(
                 dayKey = dayKey,
                 amountCents = amountCents,

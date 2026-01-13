@@ -3,6 +3,7 @@ package com.sportwallet.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.sportwallet.data.entities.DailyStatsEntity
 import com.sportwallet.data.repository.WalletRepository
 import com.sportwallet.domain.model.ActivityType
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,6 +30,10 @@ class WalletViewModel(app: Application) : AndroidViewModel(app) {
     // =========================
     // Admin
     // =========================
+
+    suspend fun adminGetDay(dayKey: String): DailyStatsEntity? {
+        return repo.adminGetDay(dayKey)
+    }
 
     fun resetDb() {
         viewModelScope.launch {

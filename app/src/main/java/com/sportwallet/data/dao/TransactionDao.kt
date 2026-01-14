@@ -22,6 +22,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY timestampEpochMs DESC LIMIT :limit")
     fun observeLatest(limit: Int): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transactions ORDER BY timestampEpochMs DESC")
+    fun observeAll(): Flow<List<TransactionEntity>>
+
     @Query("SELECT COALESCE(SUM(amountCents), 0) FROM transactions WHERE dayKey = :dayKey AND amountCents > 0")
     fun observePositiveForDay(dayKey: String): Flow<Int>
 

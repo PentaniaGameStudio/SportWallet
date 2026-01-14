@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -325,11 +326,13 @@ private fun WishItemImage(
     }.value
 
     if (imageBitmap != null) {
+        val aspectRatio = imageBitmap.width.toFloat() / imageBitmap.height.toFloat()
         Image(
             bitmap = imageBitmap,
             contentDescription = null,
             modifier = modifier
-                .size(size)
+                .height(size)
+                .aspectRatio(aspectRatio, matchHeightConstraintsFirst = true)
                 .clip(shape)
         )
     } else {

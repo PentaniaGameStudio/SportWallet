@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -27,6 +30,7 @@ import com.sportwallet.ui.viewmodel.WishlistViewModel
 fun ActivityScreen() {
     val vm: WalletViewModel = viewModel()
     val walletState = vm.walletState.collectAsStateWithLifecycle().value
+    val offDayRemaining = vm.offDayRemaining.collectAsStateWithLifecycle().value
     val wishlistViewModel: WishlistViewModel = viewModel()
     val favoriteItem = wishlistViewModel.favoriteItem.collectAsStateWithLifecycle().value
 
@@ -34,6 +38,7 @@ fun ActivityScreen() {
     var runningIconRes by rememberSaveable { mutableStateOf<Int?>(null) }
     var elapsedMs by rememberSaveable { mutableLongStateOf(0L) }
     var isPaused by rememberSaveable { mutableStateOf(false) }
+    var showOffDayLimitDialog by rememberSaveable { mutableStateOf(false) }
 
     // ✅ Flat du jour (0..400)
     val dayFlatEarnedCents = walletState?.dayFlatCents ?: 0
@@ -111,12 +116,39 @@ fun ActivityScreen() {
         )
 
         ActivityButton(
-            title = "Journée Off",
-            subtitle = "4€ Immédiat",
+            title = "Repos",
+            subtitle = "4€ immédiat • Restants ${offDayRemaining}/2",
             iconRes = R.drawable.ic_sleep,
             onClick = {
                 // Direct : calc réel sans chrono
-                vm.onActivityStopped(ActivityType.OFF_DAY, 0L)
+                if (offDayRemaining > 0) {
+                    vm.onActivityStopped(ActivityType.OFF_DAY, 0L)
+                } else {
+                    showOffDayLimitDialog = true
+                }
+            },
+            enabled = offDayRemaining > 0
+        )
+    }
+
+    if (showOffDayLimitDialog) {
+        AlertDialog(
+            onDismissRequest = { showOffDayLimitDialog = false },
+            confirmButton = {
+                Button(onClick = { showOffDayLimitDialog = false }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showOffDayLimitDialog = false }) {
+                    Text("Fermer")
+                }
+            },
+            title = { Text("Repos indisponible") },
+            text = {
+                Text(
+                    text = "Vous avez déjà utilisé 2 jours de repos sur les 7 derniers jours."
+                )
             }
         )
     }

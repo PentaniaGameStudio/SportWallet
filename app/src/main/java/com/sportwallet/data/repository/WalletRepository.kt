@@ -31,8 +31,11 @@ class WalletRepository(context: Context) {
 
     private val earningService = ActivityEarningService()
     private val streakService = StreakService()
+    private val offDayLabel = "Repos"
 
     fun observeBalanceCents(): Flow<Int> = txDao.observeBalanceCents()
+
+    fun observeTransactions(): Flow<List<TransactionEntity>> = txDao.observeAll()
 
     fun observeTodayStats(): Flow<DailyStatsEntity?> {
         val todayKey = DateUtils.localDateToKey(DateUtils.today())
@@ -124,7 +127,7 @@ class WalletRepository(context: Context) {
                 ActivityType.BIKE -> "Vélo"
                 ActivityType.WALK -> "Marche"
                 ActivityType.OTHER -> "Autre"
-                ActivityType.OFF_DAY -> "Journée Off"
+                ActivityType.OFF_DAY -> offDayLabel
             }
 
             txDao.insert(

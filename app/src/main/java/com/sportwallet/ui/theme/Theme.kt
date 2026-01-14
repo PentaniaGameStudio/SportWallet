@@ -8,35 +8,54 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
+// --- Assure-toi que ces couleurs existent dans Color.kt ---
+// Light:
+/// PinkPrimary, PinkPrimaryVariant, PinkSecondary,
+/// BackgroundLight, SurfaceLight, OnPrimaryLight, OnSurfaceLight
+// Dark:
+/// PinkPrimaryDark, PinkSecondaryDark,
+/// BackgroundDark, SurfaceDark, OnPrimaryDark, OnSurfaceDark
+
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = PinkPrimaryDark,
+    secondary = PinkSecondaryDark,
+    tertiary = PinkSecondaryDark,
+
+    background = BackgroundDark,
+    surface = SurfaceDark,
+
+    onPrimary = OnPrimaryDark,
+    onSecondary = Color(0xFF000000),
+    onTertiary = Color(0xFF000000),
+
+    onBackground = OnSurfaceDark,
+    onSurface = OnSurfaceDark
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = PinkPrimary,
+    secondary = PinkSecondary,
+    tertiary = PinkPrimaryVariant,
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    background = BackgroundLight,
+    surface = SurfaceLight,
+
+    onPrimary = OnPrimaryLight,
+    onSecondary = OnPrimaryLight,
+    onTertiary = OnPrimaryLight,
+
+    onBackground = OnSurfaceLight,
+    onSurface = OnSurfaceLight
 )
 
 @Composable
 fun SportWalletTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // IMPORTANT: si true, Android 12+ remplace ta palette par Material You
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -44,7 +63,6 @@ fun SportWalletTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }

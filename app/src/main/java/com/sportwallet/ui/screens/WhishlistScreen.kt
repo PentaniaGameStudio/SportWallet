@@ -70,9 +70,9 @@ import java.util.Locale
 
 // Palette des couleurs personnalisables pour l'onglet Envies.
 private object WishlistPalette {
-    val defaultCardColor = Color(0xFFDEDEDE)
-    val purchasedCardColor = Color(0xFFFDC745)
-    val favoriteCardColor = Color(0xFFFFA1AD)
+    val defaultCardColor   = Color(0xFFF1E7EB) // Gris rosé clair
+    val purchasedCardColor = Color(0xFFE7C3A2) // Beige doré doux
+    val favoriteCardColor  = Color(0xFFE5A4B3) // Rose poudré
 }
 
 @Composable

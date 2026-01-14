@@ -55,6 +55,7 @@ import kotlin.math.abs
 import kotlin.math.min
 import android.graphics.BitmapFactory
 import android.net.Uri
+import androidx.compose.ui.unit.min
 
 private const val FLAT_CAP_CENTS = 400 // 4€ flat max/jour
 

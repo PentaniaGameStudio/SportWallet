@@ -60,7 +60,6 @@ fun ActivityScreen() {
                 vm.onActivityStopped(runningType!!, elapsedMs) // ✅ calcul réel
                 runningType = null
                 runningIconRes = null
-                elapsedMs = 0L
                 isPaused = false
             }
         )
@@ -117,7 +116,7 @@ fun ActivityScreen() {
 
         ActivityButton(
             title = "Repos",
-            subtitle = "4€ immédiat • Restants ${offDayRemaining}/2",
+            subtitle = "Restants ${offDayRemaining}/2",
             iconRes = R.drawable.ic_sleep,
             onClick = {
                 // Direct : calc réel sans chrono

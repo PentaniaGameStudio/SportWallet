@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -39,6 +41,18 @@ fun AppNavHost(
             navController = navController,
             padding = padding
         )
+    }
+}
+
+@Composable
+private fun KeepScreenOn(enabled: Boolean) {
+    val view = LocalView.current
+    DisposableEffect(view, enabled) {
+        val previous = view.keepScreenOn
+        view.keepScreenOn = enabled
+        onDispose {
+            view.keepScreenOn = previous
+        }
     }
 }
 

@@ -188,13 +188,6 @@ class WalletRepository(context: Context) {
     }
 
     /**
-     * Admin: read daily stats for any dayKey (yyyy-MM-dd)
-     */
-    suspend fun adminGetDay(dayKey: String): DailyStatsEntity? {
-        return dayDao.get(dayKey)
-    }
-
-    /**
      * Admin: overwrite/insert daily stats for any dayKey (yyyy-MM-dd)
      */
     suspend fun adminUpsertDay(

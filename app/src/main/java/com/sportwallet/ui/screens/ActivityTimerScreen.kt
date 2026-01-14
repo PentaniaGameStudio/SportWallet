@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.sportwallet.domain.model.ActivityType
 import com.sportwallet.domain.services.ActivityEarningService
+import com.sportwallet.ui.utils.KeepScreenOn
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
@@ -47,7 +48,7 @@ fun ActivityTimerScreen(
 ) {
     var isPaused by remember { mutableStateOf(false) }
     var elapsedMs by remember { mutableLongStateOf(0L) }
-
+    KeepScreenOn(enabled = true)
     val earningService = remember { ActivityEarningService() }
 
     // Tick toutes les secondes

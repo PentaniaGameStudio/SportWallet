@@ -17,6 +17,7 @@ import com.sportwallet.ui.screens.CalendarScreen
 import com.sportwallet.ui.screens.HistoryScreen
 import com.sportwallet.ui.screens.HomeScreen
 import com.sportwallet.ui.screens.WishlistScreen
+import com.sportwallet.ui.utils.KeepScreenOn
 import com.sportwallet.ui.viewmodel.WalletViewModel
 
 @Composable
@@ -25,6 +26,7 @@ fun AppNavHost(
 ) {
     val navBackStackEntry = navController.currentBackStackEntryAsState().value
     val currentRoute = navBackStackEntry?.destination?.route
+    KeepScreenOn(enabled = true)
 
     Scaffold(
         bottomBar = {

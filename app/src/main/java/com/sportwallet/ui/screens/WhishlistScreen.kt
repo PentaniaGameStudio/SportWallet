@@ -55,13 +55,8 @@ fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
     val history by viewModel.history.collectAsState()
 
     var name by remember { mutableStateOf("") }
-    var imageUri by remember { mutableStateOf("") }
+    var imageUrl by remember { mutableStateOf("") }
     var priceInput by remember { mutableStateOf("") }
-    val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        imageUri = uri?.toString().orEmpty()
-    }
 
     Column(
         modifier = Modifier
@@ -86,27 +81,11 @@ fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
-            value = imageUri,
-            onValueChange = { imageUri = it },
-            label = { Text("Image (galerie)") },
-            modifier = Modifier.fillMaxWidth(),
-            readOnly = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedButton(
-            onClick = {
-                imagePicker.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                )
-            },
+            value = imageUrl,
+            onValueChange = { imageUrl = it },
+            label = { Text("Image (URL)") },
             modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Choisir une image")
-        }
-        if (imageUri.isNotBlank()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            WishItemImage(imageUrl = imageUri)
-        }
+        )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = priceInput,
@@ -119,9 +98,9 @@ fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
             onClick = {
                 val priceCents = parsePriceToCents(priceInput)
                 if (name.isBlank() || priceCents == null) return@Button
-                viewModel.addItem(name, imageUri, priceCents)
+                viewModel.addItem(name, imageUrl, priceCents)
                 name = ""
-                imageUri = ""
+                imageUrl = ""
                 priceInput = ""
             },
             modifier = Modifier.fillMaxWidth()

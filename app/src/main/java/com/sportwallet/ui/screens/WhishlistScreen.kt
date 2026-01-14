@@ -58,14 +58,20 @@ import kotlin.math.roundToInt
 import android.graphics.BitmapFactory
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 // Palette des couleurs personnalisables pour l'onglet Envies.
 private object WishlistPalette {
-    val defaultCardColor = Color(0xFFF5F5F5)
-    val purchasedCardColor = Color(0xFFE0E0E0)
-    val favoriteCardColor = Color(0xFFFFF3E0)
+    val defaultCardColor = Color(0xFFDEDEDE)
+    val purchasedCardColor = Color(0xFFFDC745)
+    val favoriteCardColor = Color(0xFFFFA1AD)
 }
 
 @Composable
@@ -113,7 +119,6 @@ fun WishlistScreen(
             text = "Envies",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -122,7 +127,6 @@ fun WishlistScreen(
             Text(
                 text = "Favori",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.Black
             )
             Spacer(modifier = Modifier.height(8.dp))
             FavoriteWishItemCard(
@@ -148,7 +152,6 @@ fun WishlistScreen(
             Text(
                 text = "Aucun favori sélectionné.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Black
             )
         }
 
@@ -170,12 +173,11 @@ fun WishlistScreen(
         Text(
             text = "Objets",
             style = MaterialTheme.typography.titleMedium,
-            color = Color.Black
         )
         Spacer(modifier = Modifier.height(8.dp))
 
         if (displayedItems.isEmpty()) {
-            Text("Aucun objet pour le moment.", color = Color.Black)
+            Text("Aucun objet pour le moment.")
         } else {
             displayedItems.forEach { item ->
                 WishItemCard(
@@ -250,11 +252,10 @@ fun WishlistScreen(
                     Text("Annuler")
                 }
             },
-            title = { Text("Confirmation", color = Color.Black) },
+            title = { Text("Confirmation") },
             text = {
                 Text(
-                    text = "Êtes vous sur de vouloir acheter ?",
-                    color = Color.Black
+                    text = "Êtes vous sur de vouloir acheter ?"
                 )
             }
         )
@@ -268,11 +269,10 @@ fun WishlistScreen(
                     Text("OK")
                 }
             },
-            title = { Text("Achat impossible", color = Color.Black) },
+            title = { Text("Achat impossible") },
             text = {
                 Text(
-                    text = "Vous n'avez pas assez.",
-                    color = Color.Black
+                    text = "Vous n'avez pas assez."
                 )
             }
         )
@@ -462,7 +462,7 @@ private fun WishItemDialog(
                 Text("Annuler")
             }
         },
-        title = { Text(title, color = Color.Black) },
+        title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 WishItemImage(imageUrl = imageUri.orEmpty(), size = 120.dp)
@@ -480,21 +480,48 @@ private fun WishItemDialog(
                     } else {
                         "Image sélectionnée"
                     },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Black
+                    style = MaterialTheme.typography.bodySmall
                 )
+                val keyboardController = LocalSoftwareKeyboardController.current
+
                 OutlinedTextField(
                     value = name,
                     onValueChange = onNameChange,
-                    label = { Text("Nom", color = Color.Black) },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text("Nom") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    maxLines = 1,
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Done,
+                        autoCorrect = false
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            keyboardController?.hide()
+                        }
+                    )
                 )
+
                 OutlinedTextField(
                     value = priceInput,
-                    onValueChange = onPriceChange,
-                    label = { Text("Prix (€)", color = Color.Black) },
-                    modifier = Modifier.fillMaxWidth()
+                    onValueChange = { newValue ->
+                        onPriceChange(sanitizeEuroInput(newValue))
+                    },
+                    label = { Text("Prix (€)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    maxLines = 1,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            keyboardController?.hide()
+                        }
+                    )
                 )
+
             }
         }
     )
@@ -508,10 +535,28 @@ private fun parsePriceToCents(input: String): Int? {
 
 private fun formatPriceInput(cents: Int): String {
     val euros = cents / 100.0
-    return String.format("%.2f", euros)
+    return String.format(Locale.FRANCE, "%.2f", euros)
 }
 
 private fun formatCents(cents: Int): String {
     val euros = cents / 100.0
-    return String.format("%.2f €", euros)
+    return String.format(Locale.FRANCE, "%.2f €", euros)
+}
+
+private fun sanitizeEuroInput(input: String): String {
+    // Normalise ',' en '.' pour simplifier
+    val raw = input.trim().replace(',', '.')
+
+    // Garde seulement chiffres et '.'
+    val allowed = raw.filter { it.isDigit() || it == '.' }
+
+    // Coupe à 1 seul point
+    val firstDotIndex = allowed.indexOf('.')
+    if (firstDotIndex < 0) return allowed
+
+    val before = allowed.substring(0, firstDotIndex)
+    val afterRaw = allowed.substring(firstDotIndex + 1).replace(".", "")
+    val after = afterRaw.take(2) // 2 décimales max
+
+    return before + "." + after
 }

@@ -1,8 +1,6 @@
 package com.sportwallet.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,9 +11,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -35,7 +33,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -45,6 +44,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.sportwallet.data.entities.PurchaseHistoryEntity
 import com.sportwallet.data.entities.WishItemEntity
+import com.sportwallet.R
 import com.sportwallet.ui.viewmodel.WishlistViewModel
 import kotlin.math.roundToInt
 
@@ -55,8 +55,13 @@ fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
     val history by viewModel.history.collectAsState()
 
     var name by remember { mutableStateOf("") }
-    var imageUrl by remember { mutableStateOf("") }
+    var imageUri by remember { mutableStateOf<String?>(null) }
     var priceInput by remember { mutableStateOf("") }
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        imageUri = uri?.toString()
+    }
 
     Column(
         modifier = Modifier
@@ -80,11 +85,23 @@ fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = imageUrl,
-            onValueChange = { imageUrl = it },
-            label = { Text("Image (URL)") },
+        OutlinedButton(
+            onClick = {
+                imagePicker.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                )
+            },
             modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Choisir une image depuis la galerie")
+        }
+        Text(
+            text = if (imageUri.isNullOrBlank()) {
+                "Aucune image sélectionnée"
+            } else {
+                "Image sélectionnée"
+            },
+            style = MaterialTheme.typography.bodySmall
         )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
@@ -98,9 +115,9 @@ fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
             onClick = {
                 val priceCents = parsePriceToCents(priceInput)
                 if (name.isBlank() || priceCents == null) return@Button
-                viewModel.addItem(name, imageUrl, priceCents)
+                viewModel.addItem(name, imageUri.orEmpty(), priceCents)
                 name = ""
-                imageUrl = ""
+                imageUri = null
                 priceInput = ""
             },
             modifier = Modifier.fillMaxWidth()
@@ -199,24 +216,25 @@ private fun WishItemCard(
 @Composable
 private fun WishItemImage(imageUrl: String) {
     val shape = RoundedCornerShape(8.dp)
+    val fallback: Painter = painterResource(R.drawable.obj_none)
     if (imageUrl.isNotBlank()) {
         AsyncImage(
             model = imageUrl,
             contentDescription = null,
             modifier = Modifier
                 .size(64.dp)
-                .clip(shape)
+                .clip(shape),
+            placeholder = fallback,
+            error = fallback
         )
     } else {
-        Box(
+        Image(
+            painter = fallback,
+            contentDescription = null,
             modifier = Modifier
                 .size(64.dp)
                 .clip(shape)
-                .background(Color.LightGray),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(imageVector = Icons.Filled.Image, contentDescription = null)
-        }
+        )
     }
 }
 

@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -32,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -49,6 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
+import kotlin.math.min
 import android.graphics.BitmapFactory
 import android.net.Uri
 
@@ -182,30 +185,46 @@ private fun FavoriteWishProgressCard(
         0f
     }
 
-    Card(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val imageSize = min(maxWidth * 0.75f, maxHeight * 0.4f)
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                WishItemImage(
+                    imageUrl = item.imageUrl,
+                    size = imageSize
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
-            WishItemImage(imageUrl = item.imageUrl, size = 120.dp)
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = item.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -214,19 +233,19 @@ private fun FavoriteWishProgressCard(
                 Text(
                     text = "Solde projeté",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = formatEuro(projectedBalanceCents),
                         style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = formatEuro(item.priceCents),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -240,8 +259,9 @@ private fun FavoriteWishProgressCard(
                     .height(8.dp)
                     .clip(RoundedCornerShape(999.dp)),
                 color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.15f)
+                trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
             )
+            }
         }
     }
 }
@@ -281,7 +301,11 @@ private fun DayProgressBar(
 }
 
 @Composable
-private fun WishItemImage(imageUrl: String, size: Dp) {
+private fun WishItemImage(
+    imageUrl: String,
+    size: Dp,
+    modifier: Modifier = Modifier
+) {
     val shape = RoundedCornerShape(12.dp)
     val fallback = painterResource(R.drawable.ic_envies)
     val context = LocalContext.current
@@ -304,16 +328,16 @@ private fun WishItemImage(imageUrl: String, size: Dp) {
         Image(
             bitmap = imageBitmap,
             contentDescription = null,
-            modifier = Modifier
+            modifier = modifier
                 .size(size)
                 .clip(shape)
         )
     } else {
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .size(size)
                 .clip(shape)
-                .background(MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.1f)),
+                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
             Image(

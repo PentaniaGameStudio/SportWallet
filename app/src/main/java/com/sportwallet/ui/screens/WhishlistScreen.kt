@@ -396,7 +396,7 @@ private fun FavoriteWishItemCard(
 @Composable
 private fun WishItemImage(imageUrl: String, size: Dp) {
     val shape = RoundedCornerShape(8.dp)
-    val fallback: Painter = painterResource(R.drawable.obj_none)
+    val fallback: Painter = painterResource(R.drawable.ic_envies)
     val context = LocalContext.current
     val imageBitmap: ImageBitmap? = produceState<ImageBitmap?>(null, imageUrl) {
         value = if (imageUrl.isBlank()) {

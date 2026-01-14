@@ -15,12 +15,16 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sportwallet.core.util.DateUtils
+import com.sportwallet.data.entities.DailyStatsEntity
 import com.sportwallet.ui.viewmodel.WalletViewModel
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
@@ -33,6 +37,7 @@ fun AdminScreen(
     val todayKey = DateUtils.localDateToKey(DateUtils.today())
 
     val dayKey = remember { mutableStateOf(todayKey) }
+    val coroutineScope = rememberCoroutineScope()
 
     // Daily stats
     val flat = remember { mutableStateOf("0") }
@@ -43,6 +48,37 @@ fun AdminScreen(
     // Transactions (solde)
     val txLabel = remember { mutableStateOf("Admin") }
     val txEuro = remember { mutableStateOf("0,00") }
+
+    fun normalizedDayKey(): String = dayKey.value.trim().ifBlank { todayKey }
+
+    fun applyStats(stats: DailyStatsEntity?) {
+        if (stats == null) {
+            flat.value = "0"
+            streak.value = "0"
+            bonusPercent.value = "0"
+            bonusGranted.value = "0"
+            return
+        }
+
+        flat.value = stats.flatEarnedCents.toString()
+        streak.value = stats.streakDays.toString()
+        bonusPercent.value = stats.bonusPercent.toString()
+        bonusGranted.value = stats.bonusGrantedCents.toString()
+    }
+
+    fun reloadDayStats() {
+        val targetKey = normalizedDayKey()
+        if (targetKey != dayKey.value) {
+            dayKey.value = targetKey
+        }
+        coroutineScope.launch {
+            applyStats(walletVm.adminGetDay(targetKey))
+        }
+    }
+
+    LaunchedEffect(todayKey) {
+        applyStats(walletVm.adminGetDay(todayKey))
+    }
 
     Column(
         modifier = Modifier
@@ -89,15 +125,16 @@ fun AdminScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OutlinedButton(
-                onClick = { dayKey.value = todayKey },
+                onClick = {
+                    dayKey.value = todayKey
+                    reloadDayStats()
+                },
                 modifier = Modifier.weight(1f)
             ) { Text("Aujourd'hui") }
 
             OutlinedButton(
                 onClick = {
-                    // Petit helper pour tester un autre jour vite fait
-                    // (tu peux laisser comme ça pour l’instant)
-                    dayKey.value = todayKey
+                    reloadDayStats()
                 },
                 modifier = Modifier.weight(1f)
             ) { Text("Recharger") }
@@ -140,8 +177,10 @@ fun AdminScreen(
 
         Button(
             onClick = {
+                val targetKey = normalizedDayKey()
+                dayKey.value = targetKey
                 walletVm.adminUpsertDay(
-                    dayKey = dayKey.value.trim(),
+                    dayKey = targetKey,
                     flat = flat.value.toIntOrNull() ?: 0,
                     streak = streak.value.toIntOrNull() ?: 0,
                     bonusPercent = bonusPercent.value.toIntOrNull() ?: 0,
@@ -202,9 +241,11 @@ fun AdminScreen(
 
         Button(
             onClick = {
+                val targetKey = normalizedDayKey()
+                dayKey.value = targetKey
                 val cents = euroStringToCents(txEuro.value)
                 walletVm.adminAddTransaction(
-                    dayKey = dayKey.value.trim(),
+                    dayKey = targetKey,
                     amountCents = cents,
                     label = txLabel.value.ifBlank { "Admin" }
                 )
@@ -220,14 +261,18 @@ fun AdminScreen(
         ) {
             OutlinedButton(
                 onClick = {
-                    walletVm.adminAddTransaction(dayKey.value.trim(), 100, "Admin +1€")
+                    val targetKey = normalizedDayKey()
+                    dayKey.value = targetKey
+                    walletVm.adminAddTransaction(targetKey, 100, "Admin +1€")
                 },
                 modifier = Modifier.weight(1f)
             ) { Text("+1€") }
 
             OutlinedButton(
                 onClick = {
-                    walletVm.adminAddTransaction(dayKey.value.trim(), -100, "Admin -1€")
+                    val targetKey = normalizedDayKey()
+                    dayKey.value = targetKey
+                    walletVm.adminAddTransaction(targetKey, -100, "Admin -1€")
                 },
                 modifier = Modifier.weight(1f)
             ) { Text("-1€") }
@@ -239,14 +284,18 @@ fun AdminScreen(
         ) {
             OutlinedButton(
                 onClick = {
-                    walletVm.adminAddTransaction(dayKey.value.trim(), 500, "Admin +5€")
+                    val targetKey = normalizedDayKey()
+                    dayKey.value = targetKey
+                    walletVm.adminAddTransaction(targetKey, 500, "Admin +5€")
                 },
                 modifier = Modifier.weight(1f)
             ) { Text("+5€") }
 
             OutlinedButton(
                 onClick = {
-                    walletVm.adminAddTransaction(dayKey.value.trim(), -500, "Admin -5€")
+                    val targetKey = normalizedDayKey()
+                    dayKey.value = targetKey
+                    walletVm.adminAddTransaction(targetKey, -500, "Admin -5€")
                 },
                 modifier = Modifier.weight(1f)
             ) { Text("-5€") }

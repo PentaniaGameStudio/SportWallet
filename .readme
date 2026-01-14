@@ -1,0 +1,20 @@
+# SportWallet (état actuel)
+
+## Fonctionnement global
+
+- **Solde** : le solde est la somme de toutes les transactions enregistrées. Chaque activité ajoute une transaction « flat » (plafonnée à 4 € par jour) et, si le plafond est atteint, un bonus de streak peut être crédité en une fois. Le tout est conservé via Room (transactions + statistiques journalières).
+- **Journée en cours** : au démarrage du `WalletViewModel`, l'app initialise automatiquement la journée du jour si elle n'existe pas encore, afin que les stats du jour soient disponibles.
+- **Gain d'activité** : lorsqu'une activité se termine, l'app calcule un gain « flat » (plafonné à 4 € par jour) et ajoute une transaction correspondante. Si le plafond est atteint pour la première fois de la journée et que le bonus n'a pas déjà été donné, un bonus de streak est également ajouté.
+- **Admin** : l'écran admin permet de forcer les stats d'un jour (streak, bonus, flat) et d'ajouter des transactions manuelles. Ces opérations écrivent directement en base via le dépôt.
+
+## Calcul et recalcul du streak
+
+- **Calcul du streak** : au moment où une journée est créée (initialisation du jour), le streak est recalculé à partir de **la veille** :
+  - si **la veille a atteint le plafond** (4 €), alors le streak du jour est **+1** par rapport à celui de la veille ;
+  - sinon, le streak est **remis à 0**.
+- **Recalcul au lancement** : oui **si la journée du jour n'existe pas encore**, le streak est recalculé automatiquement au lancement (via l'initialisation du jour). Si la journée existe déjà, ses valeurs (streak/bonus) sont conservées telles quelles.
+
+## Bonus streak
+
+- Le bonus streak est un pourcentage lié au nombre de jours consécutifs.
+- Il est crédité **uniquement** lorsque le plafond des 4 € est atteint pour la journée en cours, et seulement si le bonus n'a pas déjà été distribué.

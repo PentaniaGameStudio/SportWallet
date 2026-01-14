@@ -36,6 +36,18 @@ class WishlistRepository(context: Context) {
         }
     }
 
+    suspend fun updateItem(item: WishItemEntity, name: String, imageUrl: String, priceCents: Int) {
+        withContext(Dispatchers.IO) {
+            wishItemDao.update(
+                item.copy(
+                    name = name.trim(),
+                    imageUrl = imageUrl.trim(),
+                    priceCents = priceCents.coerceAtLeast(0)
+                )
+            )
+        }
+    }
+
     suspend fun deleteItem(item: WishItemEntity) {
         withContext(Dispatchers.IO) {
             wishItemDao.delete(item)
@@ -70,6 +82,7 @@ class WishlistRepository(context: Context) {
                         purchasedAtEpochMs = System.currentTimeMillis()
                     )
                 )
+                wishItemDao.setPurchased(item.id)
             }
         }
     }

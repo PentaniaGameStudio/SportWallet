@@ -26,10 +26,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -63,18 +61,22 @@ fun ActivityTimerScreen(
     dayFlatEarnedCents: Int, // flat réel déjà gagné aujourd’hui (0..400)
     balanceCents: Int,
     favoriteItem: WishItemEntity?,
+    elapsedMs: Long,
+    isPaused: Boolean,
+    onPauseToggle: () -> Unit,
+    onTick: (Long) -> Unit,
     onStop: (elapsedMs: Long) -> Unit
 ) {
-    var isPaused by remember { mutableStateOf(false) }
-    var elapsedMs by remember { mutableLongStateOf(0L) }
     KeepScreenOn(enabled = true)
     val earningService = remember { ActivityEarningService() }
+    val currentOnTick by rememberUpdatedState(onTick)
+    val currentIsPaused by rememberUpdatedState(isPaused)
 
     // Tick toutes les secondes
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000L)
-            if (!isPaused) elapsedMs += 1000L
+            if (!currentIsPaused) currentOnTick(1000L)
         }
     }
 
@@ -145,7 +147,7 @@ fun ActivityTimerScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Button(
-                    onClick = { isPaused = !isPaused },
+                    onClick = onPauseToggle,
                     modifier = Modifier
                         .weight(1f)
                         .height(54.dp),

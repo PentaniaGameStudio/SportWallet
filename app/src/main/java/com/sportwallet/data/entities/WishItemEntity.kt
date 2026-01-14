@@ -9,6 +9,7 @@ data class WishItemEntity(
     val name: String,
     val imageUrl: String,
     val priceCents: Int,
+    val isPurchased: Boolean = false,
     val isFavorite: Boolean = false,
     val createdAtEpochMs: Long
 )

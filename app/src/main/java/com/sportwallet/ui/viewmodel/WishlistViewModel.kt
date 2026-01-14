@@ -27,6 +27,12 @@ class WishlistViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun updateItem(item: WishItemEntity, name: String, imageUrl: String, priceCents: Int) {
+        viewModelScope.launch {
+            repo.updateItem(item, name, imageUrl, priceCents)
+        }
+    }
+
     fun deleteItem(item: WishItemEntity) {
         viewModelScope.launch {
             repo.deleteItem(item)

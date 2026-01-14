@@ -18,7 +18,7 @@ import com.sportwallet.data.entities.WishItemEntity
         WishItemEntity::class,
         PurchaseHistoryEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -29,7 +30,8 @@ fun ActivityButton(
     subtitle: String,
     @DrawableRes iconRes: Int,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     val shape = RoundedCornerShape(20.dp)
 
@@ -38,7 +40,8 @@ fun ActivityButton(
         modifier = modifier
             .width(300.dp)
             .height(120.dp)
-            .clickable(onClick = onClick)
+            .alpha(if (enabled) 1f else 0.5f)
+            .clickable(enabled = enabled, onClick = onClick)
     ) {
         // ✅ Fond "carte" (Surface), avec ombre + arrondi
         Surface(
@@ -80,5 +83,4 @@ fun ActivityButton(
         )
     }
 }
-
 

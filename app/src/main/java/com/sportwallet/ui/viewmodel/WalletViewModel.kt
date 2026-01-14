@@ -3,20 +3,37 @@ package com.sportwallet.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.sportwallet.core.util.DateUtils
 import com.sportwallet.data.entities.DailyStatsEntity
 import com.sportwallet.data.repository.WalletRepository
 import com.sportwallet.domain.model.ActivityType
+import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class WalletViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repo = WalletRepository(app)
+    private val offDayLabels = setOf("Repos", "Journée Off")
 
     val walletState = repo.observeWalletState()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val transactions = repo.observeTransactions()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val offDayRemaining = transactions
+        .map { list ->
+            val startDate = DateUtils.today().minusDays(6)
+            val offDayCount = list.count { tx ->
+                tx.label in offDayLabels && parseDayKey(tx.dayKey) >= startDate
+            }
+            (2 - offDayCount).coerceAtLeast(0)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 2)
 
     init {
         viewModelScope.launch { repo.ensureTodayInitialized() }
@@ -25,6 +42,14 @@ class WalletViewModel(app: Application) : AndroidViewModel(app) {
     fun onActivityStopped(type: ActivityType, elapsedMs: Long) {
         viewModelScope.launch {
             repo.applyActivityStop(type, elapsedMs)
+        }
+    }
+
+    fun onOffDayRequested() {
+        viewModelScope.launch {
+            if (offDayRemaining.value > 0) {
+                repo.applyActivityStop(ActivityType.OFF_DAY, 0L)
+            }
         }
     }
 
@@ -74,4 +99,8 @@ class WalletViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
     }
+
+    private fun parseDayKey(dayKey: String): LocalDate = runCatching {
+        LocalDate.parse(dayKey)
+    }.getOrElse { DateUtils.today() }
 }

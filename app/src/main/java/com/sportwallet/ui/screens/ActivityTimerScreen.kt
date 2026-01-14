@@ -193,24 +193,29 @@ private fun FavoriteWishProgressCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            WishItemImage(imageUrl = item.imageUrl, size = 120.dp)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
             Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                WishItemImage(imageUrl = item.imageUrl, size = 54.dp)
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = item.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Text(
-                        text = "Solde projeté",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                    )
-                }
+                Text(
+                    text = "Solde projeté",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                )
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = formatEuro(projectedBalanceCents),

@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.sportwallet.ui.screens.ActivityScreen
 import com.sportwallet.ui.screens.CalendarScreen
@@ -22,8 +23,15 @@ import com.sportwallet.ui.viewmodel.WalletViewModel
 fun AppNavHost(
     navController: NavHostController = rememberNavController()
 ) {
+    val navBackStackEntry = navController.currentBackStackEntryAsState().value
+    val currentRoute = navBackStackEntry?.destination?.route
+
     Scaffold(
-        bottomBar = { BottomNavBar(navController) }
+        bottomBar = {
+            if (currentRoute != Routes.ADMIN) {
+                BottomNavBar(navController)
+            }
+        }
     ) { padding ->
         AppNavGraph(
             navController = navController,
@@ -58,7 +66,6 @@ private fun AppNavGraph(
         }
     }
 }
-
 
 
 

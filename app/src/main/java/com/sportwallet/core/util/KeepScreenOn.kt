@@ -2,9 +2,7 @@ package com.sportwallet.ui.utils
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import android.view.WindowManager
 
 @Composable
 fun KeepScreenOn(enabled: Boolean) {

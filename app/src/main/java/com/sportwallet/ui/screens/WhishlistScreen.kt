@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,6 +49,16 @@ import com.sportwallet.data.entities.WishItemEntity
 import com.sportwallet.R
 import com.sportwallet.ui.viewmodel.WishlistViewModel
 import kotlin.math.roundToInt
+import android.graphics.BitmapFactory
+import android.net.Uri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+private object WishlistPalette {
+    val defaultCardColor = Color(0xFFF5F5F5)
+    val purchasedCardColor = Color(0xFFE0E0E0)
+    val favoriteCardColor = Color(0xFFFFF3E0)
+}
 
 private object WishlistPalette {
     val defaultCardColor = Color(0xFFF5F5F5)

@@ -8,8 +8,10 @@ import com.sportwallet.data.entities.TransactionEntity
 import com.sportwallet.domain.model.ActivityType
 import com.sportwallet.domain.services.ActivityEarningService
 import com.sportwallet.domain.services.StreakService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 data class WalletState(
@@ -171,7 +173,18 @@ class WalletRepository(context: Context) {
      * Admin: wipe total DB (dev only)
      */
     suspend fun adminResetDatabase() {
-        db.clearAllTables()
+        withContext(Dispatchers.IO) {
+            db.clearAllTables()
+        }
+    }
+
+    /**
+     * Admin: read daily stats for any dayKey (yyyy-MM-dd)
+     */
+    suspend fun adminGetDay(dayKey: String): DailyStatsEntity? {
+        return withContext(Dispatchers.IO) {
+            dayDao.get(dayKey)
+        }
     }
 
     /**
@@ -184,16 +197,18 @@ class WalletRepository(context: Context) {
         bonusPercent: Int,
         bonusGrantedCents: Int
     ) {
-        dayDao.upsert(
-            DailyStatsEntity(
-                dayKey = dayKey,
-                flatEarnedCents = flatEarnedCents.coerceIn(0, 400),
-                streakDays = streakDays.coerceAtLeast(0),
-                bonusPercent = bonusPercent.coerceIn(0, 50),
-                bonusGrantedCents = bonusGrantedCents.coerceAtLeast(0),
-                updatedAtEpochMs = System.currentTimeMillis()
+        withContext(Dispatchers.IO) {
+            dayDao.upsert(
+                DailyStatsEntity(
+                    dayKey = dayKey,
+                    flatEarnedCents = flatEarnedCents.coerceIn(0, 400),
+                    streakDays = streakDays.coerceAtLeast(0),
+                    bonusPercent = bonusPercent.coerceIn(0, 50),
+                    bonusGrantedCents = bonusGrantedCents.coerceAtLeast(0),
+                    updatedAtEpochMs = System.currentTimeMillis()
+                )
             )
-        )
+        }
     }
 
     /**
@@ -205,14 +220,16 @@ class WalletRepository(context: Context) {
         amountCents: Int,
         label: String
     ) {
-        txDao.insert(
-            TransactionEntity(
-                amountCents = amountCents,
-                label = label.ifBlank { "Admin" },
-                timestampEpochMs = System.currentTimeMillis(),
-                dayKey = dayKey
+        withContext(Dispatchers.IO) {
+            txDao.insert(
+                TransactionEntity(
+                    amountCents = amountCents,
+                    label = label.ifBlank { "Admin" },
+                    timestampEpochMs = System.currentTimeMillis(),
+                    dayKey = dayKey
+                )
             )
-        )
+        }
     }
 
 

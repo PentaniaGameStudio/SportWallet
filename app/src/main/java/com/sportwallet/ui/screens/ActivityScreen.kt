@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -20,17 +21,23 @@ import com.sportwallet.R
 import com.sportwallet.domain.model.ActivityType
 import com.sportwallet.ui.components.ActivityButton
 import com.sportwallet.ui.viewmodel.WalletViewModel
+import com.sportwallet.ui.viewmodel.WishlistViewModel
 
 @Composable
 fun ActivityScreen() {
     val vm: WalletViewModel = viewModel()
     val walletState = vm.walletState.collectAsStateWithLifecycle().value
+    val wishlistViewModel: WishlistViewModel = viewModel()
+    val favoriteItem = wishlistViewModel.favoriteItem.collectAsStateWithLifecycle().value
 
     var runningType by rememberSaveable { mutableStateOf<ActivityType?>(null) }
     var runningIconRes by rememberSaveable { mutableStateOf<Int?>(null) }
+    var elapsedMs by rememberSaveable { mutableLongStateOf(0L) }
+    var isPaused by rememberSaveable { mutableStateOf(false) }
 
     // ✅ Flat du jour (0..400)
     val dayFlatEarnedCents = walletState?.dayFlatCents ?: 0
+    val balanceCents = walletState?.balanceCents ?: 0
 
     // ✅ Chrono plein écran + simulation
     if (runningType != null && runningIconRes != null) {
@@ -38,10 +45,18 @@ fun ActivityScreen() {
             iconRes = runningIconRes!!,
             activityType = runningType!!,
             dayFlatEarnedCents = dayFlatEarnedCents,
+            balanceCents = balanceCents,
+            favoriteItem = favoriteItem,
+            elapsedMs = elapsedMs,
+            isPaused = isPaused,
+            onPauseToggle = { isPaused = !isPaused },
+            onTick = { elapsedMs += it },
             onStop = { elapsedMs ->
                 vm.onActivityStopped(runningType!!, elapsedMs) // ✅ calcul réel
                 runningType = null
                 runningIconRes = null
+                elapsedMs = 0L
+                isPaused = false
             }
         )
         return
@@ -66,6 +81,8 @@ fun ActivityScreen() {
             onClick = {
                 runningType = ActivityType.BIKE
                 runningIconRes = R.drawable.ic_velo
+                elapsedMs = 0L
+                isPaused = false
             }
         )
 
@@ -76,6 +93,8 @@ fun ActivityScreen() {
             onClick = {
                 runningType = ActivityType.WALK
                 runningIconRes = R.drawable.ic_marche
+                elapsedMs = 0L
+                isPaused = false
             }
         )
 
@@ -86,6 +105,8 @@ fun ActivityScreen() {
             onClick = {
                 runningType = ActivityType.OTHER
                 runningIconRes = R.drawable.ic_autre
+                elapsedMs = 0L
+                isPaused = false
             }
         )
 

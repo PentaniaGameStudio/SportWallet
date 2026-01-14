@@ -1,9 +1,11 @@
 package com.sportwallet.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,11 +36,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.sportwallet.core.util.DateUtils
 import com.sportwallet.data.entities.TransactionEntity
 import com.sportwallet.domain.model.ActivityType
 import com.sportwallet.ui.viewmodel.WalletViewModel
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -54,9 +60,30 @@ fun CalendarScreen(
 ) {
     val transactions by viewModel.transactions.collectAsStateWithLifecycle()
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
+    val today = remember { DateUtils.today() }
+    var selectedDate by remember { mutableStateOf(today) }
 
     val monthSummary = remember(transactions, currentMonth) {
         buildMonthSummary(transactions, currentMonth)
+    }
+
+    LaunchedEffect(currentMonth, today) {
+        if (YearMonth.from(selectedDate) != currentMonth) {
+            selectedDate = if (currentMonth == YearMonth.from(today)) {
+                today
+            } else {
+                currentMonth.atDay(1)
+            }
+        }
+    }
+
+    val selectedDayTransactions = remember(transactions, selectedDate) {
+        transactions
+            .filter { it.amountCents > 0 && it.dayKey == DateUtils.localDateToKey(selectedDate) }
+            .sortedBy { it.timestampEpochMs }
+    }
+    val selectedDayTotal = remember(selectedDayTransactions) {
+        selectedDayTransactions.sumOf { it.amountCents }
     }
 
     Column(
@@ -100,17 +127,31 @@ fun CalendarScreen(
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(7),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(monthSummary, key = { it.date?.toString() ?: "empty-${it.index}" }) { cell ->
                 CalendarDayCell(
                     date = cell.date,
-                    summary = cell.summary
+                    summary = cell.summary,
+                    isSelected = cell.date == selectedDate,
+                    onClick = {
+                        if (cell.date != null) {
+                            selectedDate = cell.date
+                        }
+                    }
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        DayDetailSection(
+            date = selectedDate,
+            totalCents = selectedDayTotal,
+            transactions = selectedDayTransactions
+        )
     }
 }
 
@@ -160,7 +201,9 @@ private fun CalendarHeader(
 @Composable
 private fun CalendarDayCell(
     date: LocalDate?,
-    summary: DaySummary?
+    summary: DaySummary?,
+    isSelected: Boolean,
+    onClick: () -> Unit
 ) {
     val background = summary?.let {
         dominantActivityColor(it.counts)?.copy(alpha = 0.2f)
@@ -170,8 +213,14 @@ private fun CalendarDayCell(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp),
-        colors = CardDefaults.cardColors(containerColor = background)
+            .aspectRatio(1f),
+        colors = CardDefaults.cardColors(containerColor = background),
+        border = if (isSelected) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else {
+            null
+        },
+        onClick = onClick
     ) {
         if (date == null) {
             return@Card
@@ -181,19 +230,112 @@ private fun CalendarDayCell(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(8.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = date.dayOfMonth.toString(),
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
             )
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = formatCents(amount),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 1
             )
+        }
+    }
+}
+
+@Composable
+private fun DayDetailSection(
+    date: LocalDate,
+    totalCents: Int,
+    transactions: List<TransactionEntity>
+) {
+    val dateLabel = formatCalendarDay(date)
+
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "Détails du jour",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            )
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = dateLabel,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = formatCents(totalCents),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (transactions.isEmpty()) {
+                    Text(
+                        text = "Aucune activité enregistrée.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    transactions.forEach { tx ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = tx.label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = formatTime(tx.timestampEpochMs),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Text(
+                                text = formatCents(tx.amountCents),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -284,4 +426,15 @@ private fun formatCents(cents: Int): String {
     val euros = absCents / 100
     val cent = absCents % 100
     return "$euros," + cent.toString().padStart(2, '0') + "€"
+}
+
+private fun formatCalendarDay(date: LocalDate): String {
+    val formatter = DateTimeFormatter.ofPattern("EEEE dd MMMM yyyy", Locale.FRENCH)
+    return date.format(formatter).replaceFirstChar { it.titlecase(Locale.FRENCH) }
+}
+
+private fun formatTime(epochMillis: Long): String {
+    val formatter = DateTimeFormatter.ofPattern("HH:mm")
+    val time = LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), java.time.ZoneId.systemDefault())
+    return time.format(formatter)
 }

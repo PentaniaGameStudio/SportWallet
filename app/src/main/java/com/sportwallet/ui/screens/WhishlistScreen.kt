@@ -12,7 +12,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -116,7 +117,8 @@ fun WishlistScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (favorite != null) {
+        val favoriteItem = favorite
+        if (favoriteItem != null) {
             Text(
                 text = "Favori",
                 style = MaterialTheme.typography.titleMedium,
@@ -124,16 +126,16 @@ fun WishlistScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             FavoriteWishItemCard(
-                item = favorite,
+                item = favoriteItem,
                 onPurchase = {
-                    if (balanceCents >= favorite.priceCents) {
-                        pendingPurchase = favorite
+                    if (balanceCents >= favoriteItem.priceCents) {
+                        pendingPurchase = favoriteItem
                     } else {
                         showInsufficientFunds = true
                     }
                 },
-                onDelete = { viewModel.deleteItem(favorite) },
-                onFavorite = { viewModel.setFavorite(favorite.id) },
+                onDelete = { viewModel.deleteItem(favoriteItem) },
+                onFavorite = { viewModel.setFavorite(favoriteItem.id) },
                 onEdit = { item ->
                     editingItem = item
                     dialogName = item.name
@@ -288,10 +290,11 @@ private fun WishItemCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(
-                onClick = {},
-                onDoubleClick = { onEdit(item) }
-            ),
+            .pointerInput(item) {
+                detectTapGestures(
+                    onDoubleTap = { onEdit(item) }
+                )
+            },
         colors = CardDefaults.cardColors(
             containerColor = if (item.isPurchased) {
                 WishlistPalette.purchasedCardColor
@@ -352,10 +355,11 @@ private fun FavoriteWishItemCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(
-                onClick = {},
-                onDoubleClick = { onEdit(item) }
-            ),
+            .pointerInput(item) {
+                detectTapGestures(
+                    onDoubleTap = { onEdit(item) }
+                )
+            },
         colors = CardDefaults.cardColors(containerColor = WishlistPalette.favoriteCardColor),
         shape = RoundedCornerShape(16.dp)
     ) {

@@ -51,9 +51,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sportwallet.data.entities.WishItemEntity
 import com.sportwallet.R
+import com.sportwallet.ui.viewmodel.WalletViewModel
 import com.sportwallet.ui.viewmodel.WishlistViewModel
 import kotlin.math.roundToInt
 import android.graphics.BitmapFactory
+import android.content.Intent
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -66,9 +68,13 @@ private object WishlistPalette {
 }
 
 @Composable
-fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
+fun WishlistScreen(
+    viewModel: WishlistViewModel = viewModel(),
+    walletViewModel: WalletViewModel = viewModel()
+) {
     val items by viewModel.items.collectAsState()
     val favorite by viewModel.favoriteItem.collectAsState()
+    val walletState by walletViewModel.walletState.collectAsState()
     val displayedItems = remember(items, favorite) {
         items.filter { it.id != favorite?.id }
     }
@@ -78,10 +84,22 @@ fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
     var dialogName by remember { mutableStateOf("") }
     var dialogImageUri by remember { mutableStateOf<String?>(null) }
     var dialogPriceInput by remember { mutableStateOf("") }
+    var pendingPurchase by remember { mutableStateOf<WishItemEntity?>(null) }
+    var showInsufficientFunds by remember { mutableStateOf(false) }
+    val balanceCents = walletState?.balanceCents ?: 0
+    val context = LocalContext.current
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         dialogImageUri = uri?.toString()
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
+        }
     }
 
     Column(
@@ -93,16 +111,27 @@ fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
         Text(
             text = "Envies",
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
         )
         Spacer(modifier = Modifier.height(16.dp))
 
         if (favorite != null) {
-            Text(text = "Favori", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = "Favori",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.Black
+            )
             Spacer(modifier = Modifier.height(8.dp))
             FavoriteWishItemCard(
                 item = favorite,
-                onPurchase = { viewModel.purchaseItem(favorite) },
+                onPurchase = {
+                    if (balanceCents >= favorite.priceCents) {
+                        pendingPurchase = favorite
+                    } else {
+                        showInsufficientFunds = true
+                    }
+                },
                 onDelete = { viewModel.deleteItem(favorite) },
                 onFavorite = { viewModel.setFavorite(favorite.id) },
                 onEdit = { item ->
@@ -116,7 +145,8 @@ fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
         } else {
             Text(
                 text = "Aucun favori sélectionné.",
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Black
             )
         }
 
@@ -135,16 +165,26 @@ fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-        Text(text = "Objets", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "Objets",
+            style = MaterialTheme.typography.titleMedium,
+            color = Color.Black
+        )
         Spacer(modifier = Modifier.height(8.dp))
 
         if (displayedItems.isEmpty()) {
-            Text("Aucun objet pour le moment.")
+            Text("Aucun objet pour le moment.", color = Color.Black)
         } else {
             displayedItems.forEach { item ->
                 WishItemCard(
                     item = item,
-                    onPurchase = { viewModel.purchaseItem(item) },
+                    onPurchase = {
+                        if (balanceCents >= item.priceCents) {
+                            pendingPurchase = item
+                        } else {
+                            showInsufficientFunds = true
+                        }
+                    },
                     onDelete = { viewModel.deleteItem(item) },
                     onFavorite = { viewModel.setFavorite(item.id) },
                     onEdit = { editItem ->
@@ -190,6 +230,51 @@ fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
             }
         )
     }
+
+    if (pendingPurchase != null) {
+        val item = pendingPurchase
+        AlertDialog(
+            onDismissRequest = { pendingPurchase = null },
+            confirmButton = {
+                Button(onClick = {
+                    item?.let { viewModel.purchaseItem(it) }
+                    pendingPurchase = null
+                }) {
+                    Text("Acheter")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { pendingPurchase = null }) {
+                    Text("Annuler")
+                }
+            },
+            title = { Text("Confirmation", color = Color.Black) },
+            text = {
+                Text(
+                    text = "Êtes vous sur de vouloir acheter ?",
+                    color = Color.Black
+                )
+            }
+        )
+    }
+
+    if (showInsufficientFunds) {
+        AlertDialog(
+            onDismissRequest = { showInsufficientFunds = false },
+            confirmButton = {
+                Button(onClick = { showInsufficientFunds = false }) {
+                    Text("OK")
+                }
+            },
+            title = { Text("Achat impossible", color = Color.Black) },
+            text = {
+                Text(
+                    text = "Vous n'avez pas assez.",
+                    color = Color.Black
+                )
+            }
+        )
+    }
 }
 
 @Composable
@@ -221,8 +306,12 @@ private fun WishItemCard(
                 WishItemImage(imageUrl = item.imageUrl, size = 64.dp)
                 Spacer(modifier = Modifier.size(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = item.name, fontWeight = FontWeight.SemiBold)
-                    Text(text = formatCents(item.priceCents))
+                    Text(
+                        text = item.name,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black
+                    )
+                    Text(text = formatCents(item.priceCents), color = Color.Black)
                 }
                 IconButton(onClick = onFavorite) {
                     if (item.isFavorite) {
@@ -278,9 +367,10 @@ private fun FavoriteWishItemCard(
                     Text(
                         text = item.name,
                         fontWeight = FontWeight.SemiBold,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.Black
                     )
-                    Text(text = formatCents(item.priceCents))
+                    Text(text = formatCents(item.priceCents), color = Color.Black)
                 }
                 IconButton(onClick = onFavorite) {
                     Icon(
@@ -368,7 +458,7 @@ private fun WishItemDialog(
                 Text("Annuler")
             }
         },
-        title = { Text(title) },
+        title = { Text(title, color = Color.Black) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 WishItemImage(imageUrl = imageUri.orEmpty(), size = 120.dp)
@@ -386,18 +476,19 @@ private fun WishItemDialog(
                     } else {
                         "Image sélectionnée"
                     },
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Black
                 )
                 OutlinedTextField(
                     value = name,
                     onValueChange = onNameChange,
-                    label = { Text("Nom") },
+                    label = { Text("Nom", color = Color.Black) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = priceInput,
                     onValueChange = onPriceChange,
-                    label = { Text("Prix (€)") },
+                    label = { Text("Prix (€)", color = Color.Black) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }

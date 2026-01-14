@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -52,7 +51,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
-import kotlin.math.min
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.ui.unit.min
@@ -106,7 +104,7 @@ fun ActivityTimerScreen(
             modifier = Modifier
                 .size(280.dp)
                 .align(Alignment.Center)
-                .alpha(0.08f)
+                .alpha(0.16f)
         )
 
         Column(

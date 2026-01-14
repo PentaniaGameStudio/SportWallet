@@ -558,5 +558,5 @@ private fun sanitizeEuroInput(input: String): String {
     val afterRaw = allowed.substring(firstDotIndex + 1).replace(".", "")
     val after = afterRaw.take(2) // 2 décimales max
 
-    return before + "." + after
+    return "$before.$after"
 }

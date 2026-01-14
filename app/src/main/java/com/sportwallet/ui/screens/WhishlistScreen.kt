@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -35,7 +36,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -44,7 +49,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import com.sportwallet.data.entities.WishItemEntity
 import com.sportwallet.R
 import com.sportwallet.ui.viewmodel.WishlistViewModel
@@ -54,12 +58,7 @@ import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private object WishlistPalette {
-    val defaultCardColor = Color(0xFFF5F5F5)
-    val purchasedCardColor = Color(0xFFE0E0E0)
-    val favoriteCardColor = Color(0xFFFFF3E0)
-}
-
+// Palette des couleurs personnalisables pour l'onglet Envies.
 private object WishlistPalette {
     val defaultCardColor = Color(0xFFF5F5F5)
     val purchasedCardColor = Color(0xFFE0E0E0)
@@ -74,13 +73,15 @@ fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
         items.filter { it.id != favorite?.id }
     }
 
-    var name by remember { mutableStateOf("") }
-    var imageUri by remember { mutableStateOf<String?>(null) }
-    var priceInput by remember { mutableStateOf("") }
+    var showDialog by remember { mutableStateOf(false) }
+    var editingItem by remember { mutableStateOf<WishItemEntity?>(null) }
+    var dialogName by remember { mutableStateOf("") }
+    var dialogImageUri by remember { mutableStateOf<String?>(null) }
+    var dialogPriceInput by remember { mutableStateOf("") }
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        imageUri = uri?.toString()
+        dialogImageUri = uri?.toString()
     }
 
     Column(
@@ -96,49 +97,37 @@ fun WishlistScreen(viewModel: WishlistViewModel = viewModel()) {
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(text = "Nouvel objet", style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Nom") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedButton(
-            onClick = {
-                imagePicker.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                )
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Choisir une image depuis la galerie")
+        if (favorite != null) {
+            Text(text = "Favori", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            FavoriteWishItemCard(
+                item = favorite,
+                onPurchase = { viewModel.purchaseItem(favorite) },
+                onDelete = { viewModel.deleteItem(favorite) },
+                onFavorite = { viewModel.setFavorite(favorite.id) },
+                onEdit = { item ->
+                    editingItem = item
+                    dialogName = item.name
+                    dialogImageUri = item.imageUrl
+                    dialogPriceInput = formatPriceInput(item.priceCents)
+                    showDialog = true
+                }
+            )
+        } else {
+            Text(
+                text = "Aucun favori sélectionné.",
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
-        Text(
-            text = if (imageUri.isNullOrBlank()) {
-                "Aucune image sélectionnée"
-            } else {
-                "Image sélectionnée"
-            },
-            style = MaterialTheme.typography.bodySmall
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = priceInput,
-            onValueChange = { priceInput = it },
-            label = { Text("Prix (€)") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
+
+        Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = {
-                val priceCents = parsePriceToCents(priceInput)
-                if (name.isBlank() || priceCents == null) return@Button
-                viewModel.addItem(name, imageUri.orEmpty(), priceCents)
-                name = ""
-                imageUri = null
-                priceInput = ""
+                editingItem = null
+                dialogName = ""
+                dialogImageUri = null
+                dialogPriceInput = ""
+                showDialog = true
             },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -318,15 +307,29 @@ private fun FavoriteWishItemCard(
 private fun WishItemImage(imageUrl: String, size: Dp) {
     val shape = RoundedCornerShape(8.dp)
     val fallback: Painter = painterResource(R.drawable.obj_none)
-    if (imageUrl.isNotBlank()) {
-        AsyncImage(
-            model = imageUrl,
+    val context = LocalContext.current
+    val imageBitmap: ImageBitmap? = produceState<ImageBitmap?>(null, imageUrl) {
+        value = if (imageUrl.isBlank()) {
+            null
+        } else {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    val uri = Uri.parse(imageUrl)
+                    context.contentResolver.openInputStream(uri)?.use { stream ->
+                        BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                    }
+                }.getOrNull()
+            }
+        }
+    }.value
+
+    if (imageBitmap != null) {
+        Image(
+            bitmap = imageBitmap,
             contentDescription = null,
             modifier = Modifier
-                .size(64.dp)
-                .clip(shape),
-            placeholder = fallback,
-            error = fallback
+                .size(size)
+                .clip(shape)
         )
     } else {
         Image(

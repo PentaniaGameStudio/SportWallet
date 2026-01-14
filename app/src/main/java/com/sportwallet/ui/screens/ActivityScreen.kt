@@ -20,17 +20,21 @@ import com.sportwallet.R
 import com.sportwallet.domain.model.ActivityType
 import com.sportwallet.ui.components.ActivityButton
 import com.sportwallet.ui.viewmodel.WalletViewModel
+import com.sportwallet.ui.viewmodel.WishlistViewModel
 
 @Composable
 fun ActivityScreen() {
     val vm: WalletViewModel = viewModel()
     val walletState = vm.walletState.collectAsStateWithLifecycle().value
+    val wishlistViewModel: WishlistViewModel = viewModel()
+    val favoriteItem = wishlistViewModel.favoriteItem.collectAsStateWithLifecycle().value
 
     var runningType by rememberSaveable { mutableStateOf<ActivityType?>(null) }
     var runningIconRes by rememberSaveable { mutableStateOf<Int?>(null) }
 
     // ✅ Flat du jour (0..400)
     val dayFlatEarnedCents = walletState?.dayFlatCents ?: 0
+    val balanceCents = walletState?.balanceCents ?: 0
 
     // ✅ Chrono plein écran + simulation
     if (runningType != null && runningIconRes != null) {
@@ -38,6 +42,8 @@ fun ActivityScreen() {
             iconRes = runningIconRes!!,
             activityType = runningType!!,
             dayFlatEarnedCents = dayFlatEarnedCents,
+            balanceCents = balanceCents,
+            favoriteItem = favoriteItem,
             onStop = { elapsedMs ->
                 vm.onActivityStopped(runningType!!, elapsedMs) // ✅ calcul réel
                 runningType = null

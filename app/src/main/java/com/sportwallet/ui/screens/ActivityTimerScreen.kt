@@ -190,7 +190,7 @@ private fun FavoriteWishProgressCard(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val imageSize = min(maxWidth * 0.75f, maxHeight * 0.4f)
+            val imageSize = min(maxWidth * 0.75f, maxHeight * 0.3f)
 
             Column(
                 modifier = Modifier.fillMaxWidth(),

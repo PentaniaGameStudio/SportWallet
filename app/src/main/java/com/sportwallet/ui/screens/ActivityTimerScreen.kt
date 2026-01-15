@@ -53,6 +53,7 @@ import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.SystemClock
 import androidx.compose.ui.unit.min
 
 private const val FLAT_CAP_CENTS = 400 // 4€ flat max/jour
@@ -75,11 +76,17 @@ fun ActivityTimerScreen(
     val currentOnTick by rememberUpdatedState(onTick)
     val currentIsPaused by rememberUpdatedState(isPaused)
 
-    // Tick toutes les secondes
+    // Tick toutes les secondes (basé sur le temps réel pour éviter la dérive)
     LaunchedEffect(Unit) {
+        var lastTickMs = SystemClock.elapsedRealtime()
         while (true) {
             delay(1000L)
-            if (!currentIsPaused) currentOnTick(1000L)
+            val nowMs = SystemClock.elapsedRealtime()
+            val deltaMs = nowMs - lastTickMs
+            if (!currentIsPaused) {
+                currentOnTick(deltaMs.coerceAtLeast(0L))
+            }
+            lastTickMs = nowMs
         }
     }
 
